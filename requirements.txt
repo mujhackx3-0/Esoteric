@@ -4,11 +4,11 @@ uvicorn[standard]==0.27.0
 python-multipart==0.0.9
 websockets==12.0
 
-# LangChain and LLM
+# LangChain and LLM (0.2.16 is the last 0.2.x release)
+langchain==0.2.16
 langchain-groq==0.1.9
 langchain-core==0.2.38
 langchain-community==0.2.16
-langchain==0.2.19
 
 # Pydantic and Settings
 pydantic==2.9.2
@@ -23,5 +23,4 @@ sentence-transformers==3.1.1
 
 # Utilities
 python-jose[cryptography]==3.3.0
-aiofiles==23.2.1
-
+aiofiles==23.2.1 
