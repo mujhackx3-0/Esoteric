@@ -33,7 +33,21 @@ llm = ChatGroq(
 
 # --- State Space Redefinition ---
 class LoanApplication(BaseModel):
-    """Represents a single loan application."""
+    """Represents a single loan application.
+
+    Attributes:
+        applicant_name (Optional[str]): The name of the loan applicant.
+        desired_amount (Optional[int]): The loan amount desired by the applicant.
+        loan_term_months (Optional[int]): The desired loan term in months.
+        purpose (Optional[str]): The purpose of the loan.
+        kyc_verified (bool): Flag indicating if KYC verification is complete.
+        credit_score (Optional[int]): The applicant's credit score.
+        credit_eligibility (Optional[Literal["eligible", "not_eligible", "pending"]]): The credit eligibility status.
+        offered_amount (Optional[int]): The loan amount offered to the applicant.
+        offered_interest_rate (Optional[float]): The interest rate offered to the applicant.
+        sanction_letter_generated (bool): Flag indicating if the sanction letter has been generated.
+        status (Literal["initiated", "kyc_pending", "credit_check_pending", "offer_made", "sanctioned", "rejected", "completed"]): The current status of the loan application.
+    """
     applicant_name: Optional[str] = None
     desired_amount: Optional[int] = None
     loan_term_months: Optional[int] = None
@@ -47,7 +61,14 @@ class LoanApplication(BaseModel):
     status: Literal["initiated", "kyc_pending", "credit_check_pending", "offer_made", "sanctioned", "rejected", "completed"] = "initiated"
 
 class State(BaseModel):
-    """Represents the state of the conversation and loan application process."""
+    """Represents the state of the conversation and loan application process.
+
+    Attributes:
+        messages (List[BaseMessage]): A list of messages in the conversation history.
+        current_loan_application (LoanApplication): The current loan application object.
+        route (str): The current route in the graph.
+        extracted_info (Dict[str, Any]): A dictionary of extracted information.
+    """
     messages: List[BaseMessage] = Field(default_factory=list)
     current_loan_application: LoanApplication = Field(default_factory=LoanApplication)
     # Add a route for better graph understanding, though LangGraph can infer
@@ -56,7 +77,16 @@ class State(BaseModel):
     extracted_info: Dict[str, Any] = Field(default_factory=dict)
 
 
-def get_message_history(session_id: str):
+def get_message_history(session_id: str) -> SQLChatMessageHistory:
+    """
+    Retrieves the message history for a given session ID from the SQLite database.
+
+    Args:
+        session_id (str): The unique identifier for the session.
+
+    Returns:
+        SQLChatMessageHistory: An object representing the chat message history.
+    """
     return SQLChatMessageHistory(session_id=session_id, connection=f'sqlite:///{SQLITE_DB_PATH}')
 
 # --- RAG Setup (Updated for Loan Product Info) ---
@@ -76,8 +106,13 @@ chroma_c = chromadb.Client(Settings(persist_directory=CHROMA_DB_PERSIST_DIR, ano
 collection = chroma_c.get_or_create_collection(name="loan_sales_rag_collection")
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
-def index_loan_products(data_chunks):
-    """Indexes loan product information into ChromaDB."""
+def index_loan_products(data_chunks: List[str]):
+    """
+    Indexes loan product information into ChromaDB.
+
+    Args:
+        data_chunks (List[str]): A list of strings, where each string is a chunk of loan product information.
+    """
     print("Indexing loan product information...")
     embeddings = embedder.encode(data_chunks).tolist() # Ensure embeddings are lists
     ids = [f"loan_product_{i}" for i in range(len(data_chunks))]
@@ -117,7 +152,18 @@ def update_loan_application_details(
 ) -> State:
     """
     Updates the current loan application with details provided by the user.
+
     Use this to capture applicant's name, desired loan amount, term, and purpose.
+
+    Args:
+        state (State): The current state of the conversation.
+        applicant_name (Optional[str]): The applicant's name.
+        desired_amount (Optional[int]): The desired loan amount.
+        loan_term_months (Optional[int]): The desired loan term in months.
+        purpose (Optional[str]): The purpose of the loan.
+
+    Returns:
+        State: The updated state.
     """
     if applicant_name:
         state.current_loan_application.applicant_name = applicant_name
@@ -135,8 +181,17 @@ def update_loan_application_details(
 def retrieve_context(state: State, query: str = None, top_k: int = 3) -> str:
     """
     Retrieves relevant information from the loan product knowledge base based on a query.
+
     Use this to answer questions about loan eligibility, available products, required documents, etc.
     If no query is provided, it uses the last user message.
+
+    Args:
+        state (State): The current state of the conversation.
+        query (str, optional): The query to search for. Defaults to None.
+        top_k (int, optional): The number of results to return. Defaults to 3.
+
+    Returns:
+        str: The retrieved context.
     """
     actual_query = query if query else (state.messages[-1].content if state.messages else "")
     if not actual_query:
@@ -161,9 +216,17 @@ def retrieve_context(state: State, query: str = None, top_k: int = 3) -> str:
 @tool
 def verify_kyc(state: State, applicant_name: str) -> State:
     """
-    Simulates the KYC verification process. In a real system, this would
-    involve external API calls and document verification. For this simulation,
-    it always succeeds.
+    Simulates the KYC verification process.
+
+    In a real system, this would involve external API calls and document verification.
+    For this simulation, it always succeeds.
+
+    Args:
+        state (State): The current state of the conversation.
+        applicant_name (str): The name of the applicant to verify.
+
+    Returns:
+        State: The updated state.
     """
     print(f"Simulating KYC verification for {applicant_name}...")
     # In a real scenario, this would be an API call to a KYC service
@@ -176,7 +239,15 @@ def verify_kyc(state: State, applicant_name: str) -> State:
 def evaluate_creditworthiness(state: State, desired_amount: int) -> State:
     """
     Simulates evaluating creditworthiness and determining loan eligibility and offer.
+
     This is a mock implementation.
+
+    Args:
+        state (State): The current state of the conversation.
+        desired_amount (int): The desired loan amount.
+
+    Returns:
+        State: The updated state.
     """
     print(f"Simulating creditworthiness evaluation for loan amount {desired_amount}...")
     # Mock logic: Generate a random credit score and determine eligibility
@@ -202,7 +273,14 @@ def evaluate_creditworthiness(state: State, desired_amount: int) -> State:
 def generate_loan_sanction_letter(state: State) -> State:
     """
     Simulates the generation of a digital loan sanction letter.
+
     In a real system, this would create a PDF document.
+
+    Args:
+        state (State): The current state of the conversation.
+
+    Returns:
+        State: The updated state.
     """
     if not state.current_loan_application.offered_amount or state.current_loan_application.offered_amount <= 0:
         state.messages.append(SystemMessage(content="Cannot generate sanction letter: No valid offer made."))
@@ -231,16 +309,30 @@ llm_with_loan_tools = llm.bind_tools([
 # --- LangGraph Nodes ---
 
 def initial_greeting(state: State) -> State:
-    """Initial greeting and sets the stage for loan application."""
+    """
+    Generates an initial greeting and sets the stage for the loan application.
+
+    Args:
+        state (State): The current state of the conversation.
+
+    Returns:
+        State: The updated state with the greeting message.
+    """
     if not state.messages: # Only greet if starting fresh
         greeting_message = AIMessage(content="Hello! I'm your AI Loan Sales Assistant from NBFC. I can help you find the right personal loan. What kind of loan are you interested in, or how much do you need?")
         state.messages.append(greeting_message)
     return state
 
-def conversational_agent(state: State):
+def conversational_agent(state: State) -> State:
     """
     The main conversational node. It uses tools based on user input and the current state
     of the loan application, and also leverages RAG for product info.
+
+    Args:
+        state (State): The current state of the conversation.
+
+    Returns:
+        State: The updated state after the conversation turn.
     """
     # Ensure current state is passed to the LLM for context, especially the loan application
     system_prompt_content = f"""You are an Agentic AI Loan Sales Assistant for a Non-Banking Financial Company (NBFC).
@@ -286,7 +378,14 @@ Guide the user through these steps:
 def decide_next_step(state: State) -> str:
     """
     Decides the next action based on the current state of the loan application.
+
     This acts as the router for the agentic behavior.
+
+    Args:
+        state (State): The current state of the conversation.
+
+    Returns:
+        str: The next step in the graph.
     """
     app = state.current_loan_application
     last_msg = state.messages[-1]
@@ -347,7 +446,13 @@ def decide_next_step(state: State) -> str:
 
 
 # --- LangGraph Definition ---
-def loan_sales_agent_graph():
+def loan_sales_agent_graph() -> StateGraph:
+    """
+    Defines and compiles the LangGraph for the loan sales agent.
+
+    Returns:
+        StateGraph: The compiled LangGraph.
+    """
     builder = StateGraph(State)
 
     # Nodes
@@ -380,6 +485,9 @@ def loan_sales_agent_graph():
 
 # --- Main Session Loop ---
 def start_loan_sales_session():
+    """
+    Starts the main session loop for the loan sales assistant.
+    """
     chatbot = loan_sales_agent_graph()
     config = {"configurable": {"thread_id": "_loan_sales_session_1"}}
 
