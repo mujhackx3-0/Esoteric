@@ -1,0 +1,82 @@
+version: "3.9"
+
+services:
+  esoteric-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: esoteric-backend
+
+    # Load environment variables from .env and override explicitly if needed
+    env_file:
+      - .env
+    environment:
+      # GROQ_API_KEY is hardcoded in app/config.py
+      GROQ_MODEL_NAME: ${GROQ_MODEL_NAME:-mixtral-8x7b-32768}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      HOST: 0.0.0.0
+      PORT: 8000
+      LANGCHAIN_TRACING_V2: "false"
+      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY:-""}
+      LANGCHAIN_PROJECT: "LoanSalesAssistant"
+      PYTHONUNBUFFERED: 1
+      PIP_NO_CACHE_DIR: 1
+
+    ports:
+      - "8000:8000"
+
+    # Mount local data directories and persistent DB volumes
+    volumes:
+      - ./data:/app/data
+      - loan_sales_rag_data:/app/loan_sales_rag.db
+      - chat_memory_data:/app/chat_memory_loan_sales.db
+
+    # Simple HTTP health check for FastAPI
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+    restart: unless-stopped
+
+    # Attach to isolated bridge network
+    networks:
+      - esoteric-network
+
+  esoteric-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://esoteric-backend:8000
+        NEXT_PUBLIC_WS_URL: ws://esoteric-backend:8000
+    container_name: esoteric-frontend
+    
+    environment:
+      NODE_ENV: production
+    
+    ports:
+      - "3000:3000"
+    
+    depends_on:
+      esoteric-backend:
+        condition: service_healthy
+    
+    restart: unless-stopped
+    
+    networks:
+      - esoteric-network
+
+volumes:
+  loan_sales_rag_data:
+    driver: local
+  chat_memory_data:
+    driver: local
+
+networks:
+  esoteric-network:
+    driver: bridge

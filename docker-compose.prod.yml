@@ -1,0 +1,129 @@
+version: "3.9"
+
+services:
+  esoteric-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: esoteric-backend-prod
+    
+    env_file:
+      - .env.production
+    
+    environment:
+      # GROQ_API_KEY is hardcoded in app/config.py - no need to set
+      ENVIRONMENT: production
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: 8000
+      PYTHONUNBUFFERED: 1
+      PIP_NO_CACHE_DIR: 1
+    
+    ports:
+      - "8000:8000"
+    
+    volumes:
+      - backend_data:/app/data
+      - rag_data:/app/loan_sales_rag.db
+      - chat_data:/app/chat_memory_loan_sales.db
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    restart: always
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    networks:
+      - esoteric-network
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  esoteric-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+    container_name: esoteric-frontend-prod
+    
+    environment:
+      NODE_ENV: production
+    
+    ports:
+      - "3000:3000"
+    
+    depends_on:
+      esoteric-backend:
+        condition: service_healthy
+    
+    restart: always
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    networks:
+      - esoteric-network
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Nginx reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    container_name: esoteric-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - esoteric-backend
+      - esoteric-frontend
+    restart: always
+    networks:
+      - esoteric-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+volumes:
+  backend_data:
+    driver: local
+  rag_data:
+    driver: local
+  chat_data:
+    driver: local
+
+networks:
+  esoteric-network:
+    driver: bridge
+

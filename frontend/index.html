@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esoteric - AI Loan Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="14" fill="#4F46E5" stroke="#312E81" stroke-width="2"/>
+                    <path d="M16 8V16L22 19" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <h1>Esoteric</h1>
+            </div>
+            <div class="header-info">
+                <span class="status-badge" id="status">
+                    <span class="status-dot"></span>
+                    Connected
+                </span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Loan Application</h2>
+                    <button class="btn-new-session" id="newSessionBtn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 2V14M2 8H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        New Session
+                    </button>
+                </div>
+
+                <div class="loan-info" id="loanInfo">
+                    <div class="info-item">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value" id="applicantName">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Amount:</span>
+                        <span class="info-value" id="loanAmount">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Purpose:</span>
+                        <span class="info-value" id="loanPurpose">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Term:</span>
+                        <span class="info-value" id="loanTerm">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">KYC Status:</span>
+                        <span class="badge" id="kycStatus">Pending</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Credit Score:</span>
+                        <span class="info-value" id="creditScore">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="badge badge-status" id="appStatus">Initiated</span>
+                    </div>
+                    <div class="info-item" id="offerSection" style="display: none;">
+                        <div class="offer-box">
+                            <h3>Loan Offer</h3>
+                            <p><strong>Amount:</strong> <span id="offeredAmount"></span></p>
+                            <p><strong>Interest Rate:</strong> <span id="interestRate"></span>%</p>
+                        </div>
+                    </div>
+                    <div class="info-item" id="sanctionSection" style="display: none;">
+                        <a href="#" id="sanctionLink" class="btn-sanction" target="_blank">📄 View Sanction Letter</a>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Chat Area -->
+            <main class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="welcome-message">
+                        <h2>Welcome to Esoteric AI Loan Assistant</h2>
+                        <p>I'm here to help you with your personal loan application. Let's get started!</p>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Type your message..." 
+                            autocomplete="off"
+                        >
+                        <button id="sendBtn" class="btn-send">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2 10L18 2L10 18L8 12L2 10Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-hint">
+                        Press Enter to send • Shift+Enter for new line
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
