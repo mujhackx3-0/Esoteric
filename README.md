@@ -133,7 +133,7 @@ export GROQ_API_KEY="your_actual_groq_api_key_here"
 
 #### Step 5: Run the Application
 ```bash
-python "ai_studio_code (1).py"
+python main.py
 ```
 
 ---
@@ -206,7 +206,10 @@ docker stats esoteric-app
 
 ```
 Esoteric/
-├── ai_studio_code (1).py    # Main application file
+├── main.py                 # Main application file
+├── tests/                  # Test files
+│   ├── test_unit.py
+│   └── test_integration.py
 ├── requirements.txt          # Python dependencies
 ├── Dockerfile               # Docker container definition
 ├── docker-compose.yml       # Docker Compose configuration
@@ -313,6 +316,22 @@ AI: Perfect! Let me verify your KYC details and check your eligibility...
 
 ---
 
+## 🧪 Testing
+
+This project includes a comprehensive test suite to ensure the quality and reliability of the code. The test suite is divided into unit tests and integration tests.
+
+### Running the Tests
+
+To run the tests, navigate to the root directory of the project and run the following command:
+
+```bash
+python -m unittest discover tests
+```
+
+This will discover and run all the tests in the `tests` directory.
+
+---
+
 ## 🔍 Troubleshooting
 
 ### Common Issues
@@ -349,36 +368,6 @@ docker stop <container_id>
 # Reinstall dependencies
 pip install --upgrade --force-reinstall -r requirements.txt
 ```
-
----
-
-## 🧪 Development
-
-### Running Tests
-```bash
-# Add test framework (pytest recommended)
-pip install pytest
-pytest tests/
-```
-
-### Code Formatting
-```bash
-# Install formatting tools
-pip install black ruff
-
-# Format code
-black .
-
-# Lint code
-ruff check .
-```
-
-### Modifying the Application
-
-1. Edit `ai_studio_code (1).py`
-2. Update dependencies in `requirements.txt` if needed
-3. Rebuild Docker image: `docker-compose build`
-4. Restart: `docker-compose up`
 
 ---
 
