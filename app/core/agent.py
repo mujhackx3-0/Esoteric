@@ -147,7 +147,7 @@ Your goal is to guide users through the personal loan application process, answe
 
 Current Loan Application Status:
 - Applicant Name: {loan_app['applicant_name'] or 'Not provided'}
-- Desired Amount: ₹{loan_app['desired_amount']:,} if loan_app['desired_amount'] else 'Not provided'}
+- Desired Amount: {'₹' + f"{loan_app['desired_amount']:,}" if loan_app['desired_amount'] else 'Not provided'}
 - Loan Term: {loan_app['loan_term_months'] or 'Not provided'} months
 - Purpose: {loan_app['purpose'] or 'Not provided'}
 - KYC Verified: {'Yes' if loan_app['kyc_verified'] else 'No'}

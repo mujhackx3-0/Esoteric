@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   esoteric-backend:
     build:
@@ -22,13 +21,20 @@ services:
       - ./data:/app/data
       - loan_sales_rag_data:/app/loan_sales_rag.db
       - chat_memory_data:/app/chat_memory_loan_sales.db
+
+
+    # Simple HTTP health check for FastAPI (using Python's urllib since curl is not installed)
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
     restart: unless-stopped
+
+
+
     networks:
       - esoteric-network
 

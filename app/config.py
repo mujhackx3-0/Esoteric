@@ -26,9 +26,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     ALLOWED_ORIGINS: list[str] = ["*"]  # Configure properly in production
     
-    # Groq LLM Settings
-    GROQ_API_KEY: str
-    GROQ_MODEL_NAME: str = "mixtral-8x7b-32768"
+
+    # Groq LLM Settings (Hardcoded - Environment Agnostic)
+    GROQ_API_KEY: str = "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"
+    GROQ_MODEL_NAME: str = "llama-3.3-70b-versatile"
     GROQ_TEMPERATURE: float = 0.5
     GROQ_MAX_TOKENS: int = 1024
     GROQ_TIMEOUT: int = 30
