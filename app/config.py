@@ -31,7 +31,9 @@ class Settings(BaseSettings):
     GROQ_MODEL_NAME: str = "mixtral-8x7b-32768"
     GROQ_TEMPERATURE: float = 0.5
     GROQ_MAX_TOKENS: int = 1024
-    GROQ_TIMEOUT: int = 30
+    GROQ_TIMEOUT: int = 120
+    GROQ_MAX_RETRIES: int = 3
+    GROQ_RETRY_DELAY: int = 2
     
     # Database Settings
     SQLITE_DB_PATH: str = "chat_memory_loan_sales.db"

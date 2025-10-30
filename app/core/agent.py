@@ -1,11 +1,13 @@
 """
-Simplified Loan Sales Agent with Groq LLM integration.
+"""Simplified Loan Sales Agent with Groq LLM integration.
 """
 import asyncio
 import random
+import time
 from typing import Dict, Any, AsyncGenerator
 from langchain_groq import ChatGroq
-from langchain.schema import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+import grpc
 
 from app.config import settings
 from app.utils.logger import logger
@@ -65,19 +67,45 @@ class LoanSalesAgent:
             # Build message history
             messages = self._build_messages(session, system_prompt, user_message)
             
-            # Call LLM
-            try:
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(self.llm.invoke, messages),
-                    timeout=settings.GROQ_TIMEOUT
-                )
-                ai_message = response.content
-            except asyncio.TimeoutError:
-                logger.error(f"LLM timeout for session {session_id}")
-                ai_message = "I apologize, but I'm taking longer than expected. Could you please try again?"
-            except Exception as e:
-                logger.error(f"LLM error: {e}")
-                ai_message = "I apologize, but I encountered an error. Please try again."
+            # Call LLM with retry logic
+            ai_message = None
+            for attempt in range(settings.GROQ_MAX_RETRIES):
+                try:
+                    response = await asyncio.wait_for(
+                        asyncio.to_thread(self.llm.invoke, messages),
+                        timeout=settings.GROQ_TIMEOUT
+                    )
+                    ai_message = response.content
+                    break  # Success, exit retry loop
+                except asyncio.TimeoutError:
+                    logger.error(f"LLM timeout for session {session_id} (attempt {attempt + 1}/{settings.GROQ_MAX_RETRIES})")
+                    if attempt == settings.GROQ_MAX_RETRIES - 1:
+                        ai_message = "I apologize, but I'm taking longer than expected. Could you please try again?"
+                    else:
+                        await asyncio.sleep(settings.GROQ_RETRY_DELAY * (attempt + 1))  # Exponential backoff
+                except Exception as e:
+                    error_str = str(e).lower()
+                    # Check for gRPC/connection errors (EOF, Unavailable, etc.)
+                    if any(err in error_str for err in ['eof', 'unavailable', 'connection', 'grpc']):
+                        logger.warning(f"Connection error on attempt {attempt + 1}/{settings.GROQ_MAX_RETRIES}: {e}")
+                        if attempt < settings.GROQ_MAX_RETRIES - 1:
+                            await asyncio.sleep(settings.GROQ_RETRY_DELAY * (attempt + 1))  # Exponential backoff
+                            # Reinitialize LLM client to reset connection
+                            self.llm = ChatGroq(
+                                groq_api_key=settings.GROQ_API_KEY,
+                                model_name=settings.GROQ_MODEL_NAME,
+                                temperature=settings.GROQ_TEMPERATURE,
+                                max_tokens=settings.GROQ_MAX_TOKENS,
+                                timeout=settings.GROQ_TIMEOUT
+                            )
+                            continue
+                        else:
+                            logger.error(f"LLM connection error after {settings.GROQ_MAX_RETRIES} attempts: {e}")
+                            ai_message = "I apologize, but I'm having trouble connecting to the service. Please try again in a moment."
+                    else:
+                        logger.error(f"LLM error: {e}", exc_info=True)
+                        ai_message = "I apologize, but I encountered an error. Please try again."
+                    break  # Exit retry loop for non-connection errors
             
             # Add AI response to history
             self.session_manager.add_message(session_id, "assistant", ai_message)
