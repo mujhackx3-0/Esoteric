@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.9"
 
 services:
   esoteric-backend:
@@ -6,29 +6,44 @@ services:
       context: .
       dockerfile: Dockerfile.fastapi
     container_name: esoteric-backend
+
+    # Load environment variables from .env and override explicitly if needed
     env_file:
       - .env
     environment:
-      - GROQ_API_KEY=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
-      - GROQ_MODEL_NAME=mixtral-8x7b-32768
-      - ENVIRONMENT=production
-      - DEBUG=false
-      - LOG_LEVEL=INFO
-      - HOST=0.0.0.0
-      - PORT=8000
+      GROQ_API_KEY: ${GROQ_API_KEY:-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}
+      GROQ_MODEL_NAME: ${GROQ_MODEL_NAME:-mixtral-8x7b-32768}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      HOST: 0.0.0.0
+      PORT: 8000
+      LANGCHAIN_TRACING_V2: "false"
+      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY:-""}
+      LANGCHAIN_PROJECT: "LoanSalesAssistant"
+      PYTHONUNBUFFERED: 1
+      PIP_NO_CACHE_DIR: 1
+
     ports:
       - "8000:8000"
+
+    # Mount local data directories and persistent DB volumes
     volumes:
       - ./data:/app/data
       - loan_sales_rag_data:/app/loan_sales_rag.db
       - chat_memory_data:/app/chat_memory_loan_sales.db
+
+    # Simple HTTP health check for FastAPI
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 40s
+
     restart: unless-stopped
+
+    # Attach to isolated bridge network
     networks:
       - esoteric-network
 
@@ -41,4 +56,3 @@ volumes:
 networks:
   esoteric-network:
     driver: bridge
-
